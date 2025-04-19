@@ -1,0 +1,9 @@
+- Use JWT (JSON Web Token) to protect the endpoints and to identify the requester.
+- For the different expense categories, you can use the following list (feel free to decide how to implement this as part of your data model):
+    - Groceries
+    - Leisure
+    - Electronics
+    - Utilities
+    - Clothing
+    - Health
+    - Others
