@@ -6,9 +6,9 @@
     <title>FinanceTracker</title>
 </head>
 <body>
-    <h2>Finance Tracker</h2>
-    <div>
-        <form method="post">
+    <h2 style="text-align: center;">Finance Tracker</h2>
+    <div style="display: flex; flex-direction:column; align-items: center; gap: 5px;">
+        <form method="post" action="/add" id="insert" style="margin-bottom: 10px;">
             <select name="categories">
                 <option hidden disabled selected>-- Select Category --</option>
                 <option value="groceries">Groceries</option>
@@ -23,13 +23,35 @@
             <input name="date" type="date">
             <button type="submit">Submit</button>
         </form>
-        <hr>
+        
+        <div>
+            <input type="radio" name="filter">
+            <label for="week">Past Week</label>
+
+            <input type="radio" name="filter">
+            <label for="month">Past Month</label>
+
+            <input type="radio" name="filter">
+            <label for="3month">Past 3 Months</label>
+            
+            <br></br>
+            <label for="start">Custom: </label>
+            <input type="date" name="start">
+            <span>-</span>
+            <input type="date" name="end">
+        </div>
+
         {% for expense in collections %}
             <ul class="expense">
                 <l1>{{ expense['category'], expense['value'], expense['date'] }}</l1>
+                <form method="post" action=" {{ url_for('delete', id=expense['_id']) }}">
+                    <input type="submit" value="Delete">
+                </form>
+                <form>
+                    <input type="submit" value="Update">
+                </form>
             </ul>
         {% endfor %}
-
     </div>
 </body>
 </html>
