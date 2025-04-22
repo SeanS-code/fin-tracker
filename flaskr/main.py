@@ -34,6 +34,25 @@ def add_expense():
 
 @app.route('/delete/<id>', methods=['POST'])
 def delete(id):
-    print("received req")
     collections.delete_one({ '_id' : ObjectId(id)})
+    return redirect(url_for('root'))
+
+@app.route('/stage_update/<id>', methods=['POST'])
+def stage_update(id):
+    return render_template('update.html', _id=id)
+@app.route('/update/<id>', methods=['POST'])
+def update(id):
+    category = request.form['categories']
+    value = int(request.form['price'])
+    date = request.form['date']
+    
+    collections.update_one(
+        { '_id' : ObjectId(id)}, 
+        { '$set': {
+            'category': category,
+            'value' : value,
+            'date' : date    
+        }}
+    )
+    print(id)
     return redirect(url_for('root'))

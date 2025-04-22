@@ -8,7 +8,7 @@
 <body>
     <h2 style="text-align: center;">Finance Tracker</h2>
     <div style="display: flex; flex-direction:column; align-items: center; gap: 5px;">
-        <form method="post" action="/add" id="insert" style="margin-bottom: 10px;">
+        <form method="post" action="/add" style="margin-bottom: 10px;">
             <select name="categories">
                 <option hidden disabled selected>-- Select Category --</option>
                 <option value="groceries">Groceries</option>
@@ -44,10 +44,10 @@
         {% for expense in collections %}
             <ul class="expense">
                 <l1>{{ expense['category'], expense['value'], expense['date'] }}</l1>
-                <form method="post" action=" {{ url_for('delete', id=expense['_id']) }}">
+                <form method="post" action="{{ url_for('delete', id=expense['_id']) }}">
                     <input type="submit" value="Delete">
                 </form>
-                <form>
+                <form method="post" action="{{ url_for('stage_update', id=expense['_id']) }}">
                     <input type="submit" value="Update">
                 </form>
             </ul>
