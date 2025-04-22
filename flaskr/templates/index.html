@@ -25,25 +25,25 @@
         </form>
         
         <div>
-            <input type="radio" name="filter">
-            <label for="week">Past Week</label>
+            <form method="get" action="/filter">
+                <input type="radio" name="filter" value="week">
+                <label for="week">Past Week</label>    
 
-            <input type="radio" name="filter">
-            <label for="month">Past Month</label>
+                <input type="radio" name="filter" value="month">
+                <label for="month">Past Month</label>
 
-            <input type="radio" name="filter">
-            <label for="3month">Past 3 Months</label>
+                <input type="radio" name="filter" value="tmonth">
+                <label for="tmonth">Past 3 Months</label>
             
-            <br></br>
-            <label for="start">Custom: </label>
-            <input type="date" name="start">
-            <span>-</span>
-            <input type="date" name="end">
+                <input type="radio" name="filter" value="custom">
+                <label for="custom">Custom</label>
+                <button type="submit">Confirm</button>
+            </form>
         </div>
 
         {% for expense in collections %}
             <ul class="expense">
-                <l1>{{ expense['category'], expense['value'], expense['date'] }}</l1>
+                <li>{{ expense['category'], expense['value'], expense['date'].strftime('%Y-%m-%d') }}</li>
                 <form method="post" action="{{ url_for('delete', id=expense['_id']) }}">
                     <input type="submit" value="Delete">
                 </form>
