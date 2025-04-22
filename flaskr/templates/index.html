@@ -3,26 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FT</title>
+    <title>FinanceTracker</title>
 </head>
 <body>
-    <h2>Finance Tracker v0.1</h2>
+    <h2>Finance Tracker</h2>
     <div>
-        <form>
+        <form method="post">
             <select name="categories">
                 <option hidden disabled selected>-- Select Category --</option>
-                <option>Groceries</option>
-                <option>Leisure</option>
-                <option>Electronics</option>
-                <option>Utilities</option>
-                <option>Clothing</option>
-                <option>Health</option>
-                <option>Others</option>
+                <option value="groceries">Groceries</option>
+                <option value="leisure">Leisure</option>
+                <option value="electronics">Electronics</option>
+                <option value="utilities">Utilities</option>
+                <option value="clothing">Clothing</option>
+                <option value="health">Health</option>
+                <option value="others">Others</option>
             </select>
-            <input type="number">
-            <input type="date">
-            <button>Submit</button>
+            <input name="price" type="number">
+            <input name="date" type="date">
+            <button type="submit">Submit</button>
         </form>
+        <hr>
+        {% for expense in collections %}
+            <ul class="expense">
+                <l1>{{ expense['category'], expense['value'], expense['date'] }}</l1>
+            </ul>
+        {% endfor %}
+
     </div>
 </body>
 </html>
