@@ -7,7 +7,7 @@ app = Flask(__name__)
 # Connect to MongoDB
 client = MongoClient("mongodb://localhost:27017/")
 db = client["tracker"]
-collection = db["expense"]
+collection = db["expenses"]
 
 # Base page
 @app.route('/', methods=('GET', 'POST'))
@@ -20,27 +20,31 @@ def root():
     
     return render_template('index.html')
 
-# Read
-@app.route('/read', methods=['GET'])
-def read():
-    data = list(collection.find())
-    for d in data:
-        d['_id'] = str(d['_id'])
-    return jsonify(data)
+"""
 
-# Update
-@app.route('/users/<id>', methods=['GET','PUT'])
-def update_user(id):
-    data = request.get_json()
-    result = collection.update_one({"_id": ObjectId(id)}, {"$set": data})
-    if result.matched_count:
-        return jsonify({"msg": "Updated successfully"})
-    return jsonify({"error": "User not found"}), 404
+GET
+>> for login authentication and authorization
 
-# Delete
-@app.route('/del/<id>', methods=['GET','DELETE'])
-def delete(id):
-    result = collection.delete_one({"_id": ObjectId(id)})
-    if result.deleted_count:
-        return jsonify({"msg": "Deleted successfully"})
-    return jsonify({"error": "User not found"}), 404
+>> for a users expenses in database
+(users and expenses are connected through an id)
+
+>> for displaying the expenses on the page
+(select that matches the time chosen by user)
+
+CREATE
+>> create an expense with...
+1) category (groceries, leisure, electronics ...)
+2) value ($75, $100)
+3) date (3.15.2020, 4.15.2025)
+
+>> create a user with...
+username
+password
+
+UPDATE
+>> update expenses (change category, value or date)
+
+DELETE
+>> delete existing expenses
+
+"""

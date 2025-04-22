@@ -6,11 +6,23 @@
     <title>FT</title>
 </head>
 <body>
-    <p>Finance Tracker v0.1</p>
-    <form method="post">
-        <h3>Groceries</h3>
-        <input type="number" name="groceries"></input>
-        <button type="submit">Submit</button>
-    </form>
+    <h2>Finance Tracker v0.1</h2>
+    <div>
+        <form>
+            <select name="categories">
+                <option hidden disabled selected>-- Select Category --</option>
+                <option>Groceries</option>
+                <option>Leisure</option>
+                <option>Electronics</option>
+                <option>Utilities</option>
+                <option>Clothing</option>
+                <option>Health</option>
+                <option>Others</option>
+            </select>
+            <input type="number">
+            <input type="date">
+            <button>Submit</button>
+        </form>
+    </div>
 </body>
 </html>
