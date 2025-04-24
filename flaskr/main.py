@@ -3,7 +3,6 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 
 from datetime import datetime, timezone, timedelta
-from dateutil.relativedelta import relativedelta 
 
 app = Flask(__name__)
 
@@ -84,8 +83,20 @@ def filter():
         one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
         filtered_expenses = collections.find({"date": {"$gte": one_month_ago}})
     
+    elif filter_value == 'custom':
+        three_months_ago = datetime.now(timezone.utc) - timedelta(days=90)
+        filtered_expenses = collections.find({"date": {"$gte": three_months_ago}})
+
     else:
         # If no valid filter is selected, display all expenses
-        filtered_expenses = collections.find()
-        
+        return redirect(url_for('root'))
+
     return render_template('index.html', collections=filtered_expenses)
+
+@app.route('/login', methods=['GET'])
+def login_direct():
+    return render_template('auth/login.html')
+
+@app.route('/register', methods=['GET'])
+def register():
+    return render_template('auth/register.html')

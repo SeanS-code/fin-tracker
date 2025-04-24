@@ -6,7 +6,15 @@
     <title>FinanceTracker</title>
 </head>
 <body>
-    <h2 style="text-align: center;">Finance Tracker</h2>
+    <nav style="display: flex; justify-content: end; gap: 10px; margin-right: 15px;">
+        <form method="get" action="/login">
+            <button>Login</button>
+        </form>
+        <form>
+            <button>Register</button>
+        </form>
+    </nav>
+    <h2 style="text-align: center;">Finance Tracker</h2>  
     <div style="display: flex; flex-direction:column; align-items: center; gap: 5px;">
         <form method="post" action="/add" style="margin-bottom: 10px;">
             <select name="categories">

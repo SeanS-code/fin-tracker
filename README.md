@@ -3,8 +3,9 @@
 
 
 
-# Libraries
-Python  
+
+### Technologies/Libraries
+
 Flask  
 pyMongo  
 PyJWT
