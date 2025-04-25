@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, url_for, redirect, jsonify
+from flask import Flask, render_template, request, url_for, redirect, session
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
@@ -9,13 +9,51 @@ app = Flask(__name__)
 # Connect to MongoDB
 client = MongoClient('localhost', 27017)
 db = client.tracker
-collections = db.expenses
+expense = db.expenses
+user = db.users
+
+# Page Routings
 
 # Homepage
 @app.route('/', methods=['GET'])
 def root():
-    all_expenses = collections.find()
-    return render_template('index.html', collections=all_expenses)
+    all_expenses = expense.find()
+    return render_template('index.html', expense=all_expenses)
+
+# Login Page
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method=='POST' and 'username' in request.form and 'password' in request.form:
+        username = request.form['username']
+        password = request.form['password']
+
+        if user.find_one({'username': username, 'password': password}) is not None:
+            return render_template(('index.html'), name=username)
+
+    return render_template('auth/login.html')
+
+# Registration Page
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method=='POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        document = {
+            'username': username,
+            'password' : password
+        }
+
+        user.insert_one(document)
+        return redirect(url_for('login'))
+    return render_template('auth/register.html')
+
+# Update Page
+@app.route('/stage_update/<id>', methods=['POST'])
+def stage_update(id):
+    return render_template('update.html', _id=id)
+
+# CRUDs for Expenses
 
 # Add an expense
 @app.route('/add', methods=['POST'])
@@ -30,19 +68,14 @@ def add_expense():
         'date' : date
     }
 
-    collections.insert_one(document)
+    expense.insert_one(document)
     return redirect(url_for('root'))
 
 # Delete an expense
 @app.route('/delete/<id>', methods=['POST'])
 def delete(id):
-    collections.delete_one({ '_id' : ObjectId(id)})
+    expense.delete_one({ '_id' : ObjectId(id)})
     return redirect(url_for('root'))
-
-# Route user to updating page
-@app.route('/stage_update/<id>', methods=['POST'])
-def stage_update(id):
-    return render_template('update.html', _id=id)
 
 # Update given expense
 @app.route('/update/<id>', methods=['POST'])
@@ -51,7 +84,7 @@ def update(id):
     value = int(request.form['price'])
     date = datetime.strptime(request.form['date'])
     
-    collections.update_one(
+    expense.update_one(
         { '_id' : ObjectId(id)}, 
         { '$set': {
             'category': category,
@@ -62,7 +95,7 @@ def update(id):
     print(id)
     return redirect(url_for('root'))
 
-# Filter
+# Filtering Expenses
 @app.route('/filter', methods=['GET'])
 def filter():
     filter_value = request.args.get('filter')
@@ -71,32 +104,26 @@ def filter():
     if filter_value == 'tmonth':
         # Filter by the past 3 months
         three_months_ago = datetime.now(timezone.utc) - timedelta(days=90)
-        filtered_expenses = collections.find({"date": {"$gte": three_months_ago}})
+        filtered_expenses = expense.find({"date": {"$gte": three_months_ago}})
     
     elif filter_value == 'week':
         # Filter by the past week
         one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-        filtered_expenses = collections.find({"date": {"$gte": one_week_ago}})
+        filtered_expenses = expense.find({"date": {"$gte": one_week_ago}})
     
     elif filter_value == 'month':
         # Filter by the past month
         one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
-        filtered_expenses = collections.find({"date": {"$gte": one_month_ago}})
+        filtered_expenses = expense.find({"date": {"$gte": one_month_ago}})
     
+    else:
+        # Route to root
+        return redirect(url_for('root'))
+    
+    ''' Need to implement
     elif filter_value == 'custom':
         three_months_ago = datetime.now(timezone.utc) - timedelta(days=90)
-        filtered_expenses = collections.find({"date": {"$gte": three_months_ago}})
+        filtered_expenses = expense.find({"date": {"$gte": three_months_ago}})
+    '''
 
-    else:
-        # If no valid filter is selected, display all expenses
-        return redirect(url_for('root'))
-
-    return render_template('index.html', collections=filtered_expenses)
-
-@app.route('/login', methods=['GET'])
-def login_direct():
-    return render_template('auth/login.html')
-
-@app.route('/register', methods=['GET'])
-def register():
-    return render_template('auth/register.html')
+    return render_template('index.html', expense=filtered_expenses)
