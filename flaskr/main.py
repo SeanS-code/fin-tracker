@@ -4,7 +4,11 @@ from bson.objectid import ObjectId
 
 from datetime import datetime, timezone, timedelta
 
+import secrets
+
 app = Flask(__name__)
+
+app.secret_key = secrets.token_hex(32)
 
 # Connect to MongoDB
 client = MongoClient('localhost', 27017)
@@ -17,8 +21,13 @@ user = db.users
 # Homepage
 @app.route('/', methods=['GET'])
 def root():
-    all_expenses = expense.find()
-    return render_template('index.html', expense=all_expenses)
+    if session.get('username') is None:
+        return redirect(url_for('login'))
+    userid = session.get('userid')
+    username = session.get('username')
+
+    all_expenses = expense.find({ 'user_id': ObjectId(userid)})
+    return render_template('index.html', expense=all_expenses, username=username)
 
 # Login Page
 @app.route('/login', methods=['GET', 'POST'])
@@ -27,8 +36,13 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        if user.find_one({'username': username, 'password': password}) is not None:
-            return render_template(('index.html'), name=username)
+        user_cred = user.find_one({'username': username, 'password': password})
+
+        if  user_cred is not None:
+            session['userid'] = str(user_cred['_id'])
+            print('Session UserID:', session.get('userid'))
+            session['username'] = username
+            return redirect(url_for('root'))
 
     return render_template('auth/login.html')
 
@@ -61,8 +75,10 @@ def add_expense():
     category = request.form['categories']
     value = int(request.form['price'])
     date = datetime.strptime(request.form['date'], '%Y-%m-%d')
-    
+    userid = session.get('userid')
+
     document = {
+        'user_id': ObjectId(userid),
         'category': category,
         'value' : value,
         'date' : date
@@ -99,22 +115,22 @@ def update(id):
 @app.route('/filter', methods=['GET'])
 def filter():
     filter_value = request.args.get('filter')
-    print(filter_value)
+    userid = session.get('userid')
 
     if filter_value == 'tmonth':
         # Filter by the past 3 months
         three_months_ago = datetime.now(timezone.utc) - timedelta(days=90)
-        filtered_expenses = expense.find({"date": {"$gte": three_months_ago}})
+        filtered_expenses = expense.find({"user_id": ObjectId(userid), "date": {"$gte": three_months_ago}})
     
     elif filter_value == 'week':
         # Filter by the past week
         one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-        filtered_expenses = expense.find({"date": {"$gte": one_week_ago}})
+        filtered_expenses = expense.find({"user_id": ObjectId(userid), "date": {"$gte": one_week_ago}})
     
     elif filter_value == 'month':
         # Filter by the past month
         one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
-        filtered_expenses = expense.find({"date": {"$gte": one_month_ago}})
+        filtered_expenses = expense.find({"user_id": ObjectId(userid), "date": {"$gte": one_month_ago}})
     
     else:
         # Route to root

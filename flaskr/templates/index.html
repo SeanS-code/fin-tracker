@@ -16,7 +16,7 @@
     </nav>
 
     <h2 style="text-align: center;">Finance Tracker</h2>
-    <h4 style="text-align: center;">Hello! {{ name }} </h4>
+    <h4 style="text-align: center;">Hello {{ session.username }}</h4>
     <div style="display: flex; flex-direction:column; align-items: center; gap: 5px;">
         <form method="post" action="/add" style="margin-bottom: 10px;">
             <select name="categories">
