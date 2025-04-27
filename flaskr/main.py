@@ -1,14 +1,16 @@
-from flask import Flask, render_template, request, url_for, redirect, session
+from flask import Flask, render_template, request, url_for, redirect, session, jsonify
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
 from datetime import datetime, timezone, timedelta
 
+from functools import wraps
 import secrets
+import jwt
 
 app = Flask(__name__)
 
-app.secret_key = secrets.token_hex(32)
+app.config['SECRET_KEY'] = secrets.token_hex(32)
 
 # Connect to MongoDB
 client = MongoClient('localhost', 27017)
@@ -16,8 +18,45 @@ db = client.tracker
 expense = db.expenses
 user = db.users
 
-# Page Routings
+# JWT Funcs
+def token_gen(userid):
+    payload = {
+        'user_id': userid,
+        'exp': datetime.now(timezone.utc) + timedelta(minutes=30)  # token expires in 30 minutes
+    }
+    token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
+    #print(token+"\n")
+    #print(app.config['SECRET_KEY'])
+    return token
 
+def token_verify(f):
+    @wraps(f)
+    def decorate(*args, **kwargs):
+        token = None
+
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            if auth_header and auth_header.startswith('Bearer '):
+                token = auth_header.split(' ')[1]
+
+        if not token:
+            return redirect(url_for('login'))
+        
+        try:
+            # Decode the token to validate it
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+            current_user_id = data['user_id']  # You can also load user from DB here if needed
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Token has expired!'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Invalid token!'}), 401
+
+        # Pass the user_id into the route
+        return f(current_user_id, *args, **kwargs)
+
+    return decorate
+
+# Page Routings
 # Homepage
 @app.route('/', methods=['GET'])
 def root():
@@ -38,13 +77,20 @@ def login():
 
         user_cred = user.find_one({'username': username, 'password': password})
 
-        if  user_cred is not None:
+        if  user_cred:
+            token_gen(str(user_cred['_id']))
             session['userid'] = str(user_cred['_id'])
-            print('Session UserID:', session.get('userid'))
             session['username'] = username
             return redirect(url_for('root'))
 
     return render_template('auth/login.html')
+
+# Make function for logout session
+@app.route('/logout')
+def logout():
+    session.pop('userid', None)
+    session.pop('username', None)
+    return redirect(url_for('login'))
 
 # Registration Page
 @app.route('/register', methods=['GET', 'POST'])
@@ -71,6 +117,7 @@ def stage_update(id):
 
 # Add an expense
 @app.route('/add', methods=['POST'])
+@token_verify
 def add_expense():
     category = request.form['categories']
     value = int(request.form['price'])
@@ -89,12 +136,14 @@ def add_expense():
 
 # Delete an expense
 @app.route('/delete/<id>', methods=['POST'])
+@token_verify
 def delete(id):
     expense.delete_one({ '_id' : ObjectId(id)})
     return redirect(url_for('root'))
 
 # Update given expense
 @app.route('/update/<id>', methods=['POST'])
+@token_verify
 def update(id):
     category = request.form['categories']
     value = int(request.form['price'])
@@ -113,6 +162,7 @@ def update(id):
 
 # Filtering Expenses
 @app.route('/filter', methods=['GET'])
+@token_verify
 def filter():
     filter_value = request.args.get('filter')
     userid = session.get('userid')
