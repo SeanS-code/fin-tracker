@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, url_for, redirect, session, jsonify
+from flask import Flask, request, session, render_template , url_for, redirect, jsonify, make_response
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
@@ -25,14 +25,12 @@ def token_gen(userid):
         'exp': datetime.now(timezone.utc) + timedelta(minutes=30)  # token expires in 30 minutes
     }
     token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
-    #print(token+"\n")
-    #print(app.config['SECRET_KEY'])
     return token
 
 def token_verify(f):
     @wraps(f)
     def decorate(*args, **kwargs):
-        token = None
+        token = request.cookies.get('jwt_token')
 
         if 'Authorization' in request.headers:
             auth_header = request.headers['Authorization']
@@ -40,12 +38,12 @@ def token_verify(f):
                 token = auth_header.split(' ')[1]
 
         if not token:
-            return redirect(url_for('login'))
+            return jsonify({'message': 'Token is missing'}), 401
         
         try:
             # Decode the token to validate it
             data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-            current_user_id = data['user_id']  # You can also load user from DB here if needed
+            current_user_id = data['user_id']
         except jwt.ExpiredSignatureError:
             return jsonify({'message': 'Token has expired!'}), 401
         except jwt.InvalidTokenError:
@@ -78,10 +76,13 @@ def login():
         user_cred = user.find_one({'username': username, 'password': password})
 
         if  user_cred:
-            token_gen(str(user_cred['_id']))
+            token = token_gen(str(user_cred['_id']))
             session['userid'] = str(user_cred['_id'])
             session['username'] = username
-            return redirect(url_for('root'))
+
+            resp = make_response(redirect(url_for('root')))
+            resp.set_cookie('jwt_token', token, httponly=True, secure=False)  # Secure=True in production (HTTPS)
+            return resp
 
     return render_template('auth/login.html')
 
@@ -118,7 +119,7 @@ def stage_update(id):
 # Add an expense
 @app.route('/add', methods=['POST'])
 @token_verify
-def add_expense():
+def add_expense(user_id):
     category = request.form['categories']
     value = int(request.form['price'])
     date = datetime.strptime(request.form['date'], '%Y-%m-%d')
@@ -137,14 +138,14 @@ def add_expense():
 # Delete an expense
 @app.route('/delete/<id>', methods=['POST'])
 @token_verify
-def delete(id):
-    expense.delete_one({ '_id' : ObjectId(id)})
+def delete(user_id):
+    expense.delete_one({ '_id' : ObjectId(user_id)})
     return redirect(url_for('root'))
 
 # Update given expense
 @app.route('/update/<id>', methods=['POST'])
 @token_verify
-def update(id):
+def update(user_id):
     category = request.form['categories']
     value = int(request.form['price'])
     date = datetime.strptime(request.form['date'])
@@ -162,7 +163,6 @@ def update(id):
 
 # Filtering Expenses
 @app.route('/filter', methods=['GET'])
-@token_verify
 def filter():
     filter_value = request.args.get('filter')
     userid = session.get('userid')
