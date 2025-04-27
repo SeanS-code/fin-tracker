@@ -22,7 +22,7 @@ user = db.users
 def token_gen(userid):
     payload = {
         'user_id': userid,
-        'exp': datetime.now(timezone.utc) + timedelta(minutes=30)  # token expires in 30 minutes
+        'exp': datetime.now(timezone.utc) + timedelta(minutes=30)
     }
     token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
     return token
@@ -81,7 +81,7 @@ def login():
             session['username'] = username
 
             resp = make_response(redirect(url_for('root')))
-            resp.set_cookie('jwt_token', token, httponly=True, secure=False)  # Secure=True in production (HTTPS)
+            resp.set_cookie('jwt_token', token, httponly=True, secure=False)
             return resp
 
     return render_template('auth/login.html')
@@ -182,14 +182,28 @@ def filter():
         one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
         filtered_expenses = expense.find({"user_id": ObjectId(userid), "date": {"$gte": one_month_ago}})
     
+    elif filter_value == 'custom':
+        # Get the start and end dates from the form
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Parse them into datetime objects
+        if start_date_str and end_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+
+            # Query for expenses between the two dates
+            filtered_expenses = expense.find({
+                "date": {
+                    "$gte": start_date,
+                    "$lte": end_date
+                }
+            })
+        else:
+            return "Start and end date required for custom filter", 400
+
     else:
         # Route to root
         return redirect(url_for('root'))
-    
-    ''' Need to implement
-    elif filter_value == 'custom':
-        three_months_ago = datetime.now(timezone.utc) - timedelta(days=90)
-        filtered_expenses = expense.find({"date": {"$gte": three_months_ago}})
-    '''
 
     return render_template('index.html', expense=filtered_expenses)
