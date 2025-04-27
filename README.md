@@ -29,7 +29,7 @@ secrets module
 ## Future Developments
 
 - CSS
-- package project with pyproject.toml
+- Package project with pyproject.toml
 - Add a frontend framework
 - Testing files for the API
 - Containerizing the application
